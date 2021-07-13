@@ -1,0 +1,19 @@
+・Width、Height以下でPointを作成する。
+・HugeTriangleを作成する。
+・TriangleSetにHugeTriangleを追加する。
+・PointをPointListから一つずつ取り出す。
+　・TriangleをTriangleSetから一つずつ取り出す。
+　　・Triangleの外接円を求める
+　　・Triangleの外接円の内部にPointがないか確認する。
+　　　・あればそのTriangleをPointを中心に分割してテンプレートに追加する。
+　　　・TriangleをTriangleSetから削除する。
+　・テンプレートにあるTriangleを一つずつ取り出す。
+　　・Triangleがユニークであるか確認する。
+　　　・ユニークであればTriangleSetにTriangleを追加する
+・TriangleをTriangleSetから一ずつ取り出す。
+　・Triangleの頂点に分割されたHugeTriangleの頂点と共有しているものがあるか確認する
+　　・あればTriangleSetからTriangleを削除する
+
+例えばあるTriangleの内部にPointが存在してそのTriangleは消されていると仮定する。
+その時に新しいPointで分割して新たなTriangleが生成されそれが前に消されたTriangle
+と一致するとそれをSetに追加できないためテンプレートで一度出たか管理している。わけではない！
