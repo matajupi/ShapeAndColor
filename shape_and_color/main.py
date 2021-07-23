@@ -1,27 +1,26 @@
+import sys
 from tkinter import *
-from .mission import MissionCreator, Mission, DelaunayMissionCreator
+from moderators import *
 
 
-GAME_TITLE: str = "Shapes And Colors"
-GUI_WIDTH: int = 800
-GUI_HEIGHT: int = 400
-GUI_SIZE: str = f"{GUI_WIDTH}x{GUI_HEIGHT}"
+GUI_WIDTH = 1600
+GUI_HEIGHT = 800
+GUI_TITLE = "Delaunay triangles"
 
 
-if __name__ == '__main__':
-    root: Tk = Tk()
-    root.title(GAME_TITLE)
-    root.geometry(GUI_SIZE)
+if __name__ == "__main__":
+    # Create window
+    root = Tk()
+    root.title(GUI_TITLE)
 
-    canvas: Canvas = Canvas(root, width=GUI_WIDTH, height=GUI_HEIGHT)
-    canvas.pack()
+    # Pause commandline arguments and create moderator
+    moderator: Moderator
+    args = sys.argv
+    if len(args) == 2 and args[1] == "animation":
+        moderator = AnimationModerator(root, GUI_WIDTH, GUI_HEIGHT)
+    else:
+        moderator = DisplayModerator(root, GUI_WIDTH, GUI_HEIGHT)
 
-    # Create mission and draw
-    mission_creator: MissionCreator = DelaunayMissionCreator()
-    mission: Mission = mission_creator.create(canvas)
-
-    # start game
-    mission.start()
-
-    root.main_loop()
+    # Execute
+    moderator.execute()
 

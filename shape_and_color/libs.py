@@ -3,16 +3,58 @@ Libraries for creating a mission.
 """
 
 import math
+from abc import *
 from tkinter import Canvas
+
+
+class Drawable(ABC):
+    @abstractmethod
+    def draw(self, canvas: Canvas):
+        pass
+
+
+class Color:
+    __red: int
+    __green: int
+    __blue: int
+
+    @property
+    def red(self):
+        return self.__red
+
+    @property
+    def green(self):
+        return self.__green
+
+    @property
+    def blue(self):
+        return self.__blue
+
+    @property
+    def hex(self):
+        color_hex = "#"
+        color_hex += hex(self.red)[2:]
+        color_hex += hex(self.green)[2:]
+        color_hex += hex(self.blue)[2:]
+        return color_hex
+
+    def __init__(self, red: int, green: int, blue: int):
+        red = max(red, 0)
+        red = min(red, 255)
+        self.__red = red
+
+        green = max(green, 0)
+        green = min(green, 255)
+        self.__green = green
+
+        blue = max(blue, 0)
+        blue = min(blue, 255)
+        self.__blue = blue
 
 
 class Point:
     __x: float
     __y: float
-
-    def __init__(self, x: int, y: int):
-        self.__x = x
-        self.__y = y
 
     @property
     def x(self):
@@ -22,7 +64,15 @@ class Point:
     def y(self):
         return self.__y
 
+    def __init__(self, x: int, y: int):
+        self.__x = x
+        self.__y = y
+
     def __eq__(self, other):
+        # "isinstance" of "type" function is very hevy.
+        #if type(other) == Point:
+        #    return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
+        #return False
         return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
 
     def __ne__(self, other):
@@ -32,169 +82,87 @@ class Point:
         return hash((round(self.x), round(self.y)))
 
     def distance(self, other) -> float:
-        """ Compute distance between 2 points """
+        """ Compute euclidean distance between 2 points """
         return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
 
-class UndirectedLineSegment:
-    __point1: Point
-    __point2: Point
-
-    def __init__(self, point1, point2):
-        self.__point1 = point1
-        self.__point2 = point2
+class Triangle(Drawable):
+    __points: list
+    __color: Color
 
     @property
-    def point1(self):
-        return self.__point1
+    def points(self):
+        return self.__points
+
+    @points.setter
+    def points(self, points: list):
+        if len(points) != 3:
+            raise Exception("List length must be 3.")
+        # "isinstance" of "type" function is very hevy.
+        #for point in points:
+        #    if type(point) == Point:
+        #        continue
+        #    raise TypeError("List items must be type of Point.")
+        self.__points = points
 
     @property
-    def point2(self):
-        return self.__point2
+    def color(self):
+        return self.__color
+
+    @color.setter
+    def color(self, color: Color):
+        self.__color = color
+
+    def __init__(self, p1: Point, p2: Point, p3: Point, color: Color=Color(0xff, 0xff, 0xff)):
+        self.points = [p1, p2, p3]
+        self.__color = color
 
     def __eq__(self, other):
-        point_set = {self.point1, self.point2}
-        other_points = [other.point1, other.point2]
-        flag = True
-        for point in other_points:
-            flag = flag and point in point_set
-        return flag
+        # "isinstance" of "type" function is very hevy.
+        #if type(other) != Point:
+        #    return False
+
+        other_points = list(other.points)
+        for point in self.points:
+            if point in other_points:
+                other_points.remove(point)
+                continue
+            return False
+        return True
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        x_list = [self.point1.x, self.point2.x]
-        y_list = [self.point1.y, self.point2.y]
-        x_list.sort()
-        y_list.sort()
-        return hash(tuple(x_list + y_list))
-
-
-class Polygon:
-    # Store in the order of the points of the figure.
-    __vertices: tuple
-    __num_of_vertices: int
-    __area: float
-
-    def __init__(self, vertices: tuple, area=-1):
-        for point in vertices:
-            if not isinstance(point, Point):
-                raise TypeError("All arguments must be of type point.")
-        self.__vertices = vertices
-        self.__num_of_vertices = len(vertices)
-
-        if area < 0 and self.num_of_vertices == 3:
-            area = self.compute_triangle_area(self.vertices)
-        self.__area = area
-
-    @property
-    def vertices(self):
-        return self.__vertices
-
-    @property
-    def num_of_vertices(self):
-        return self.__num_of_vertices
-
-    @property
-    def area(self):
-        return self.__area
-
-    @staticmethod
-    def compute_triangle_area(vertices: tuple) -> float:
         """
-        Compute the area from Heron's formula.
-
-        Heron's formula:
-        a, b, c : Length of each side
-        s : Semiperimeter
-        S : Area
-
-        s = (a + b + c) / 2
-        S = math.sqrt(s * (s - a) * (s - b) * (s - c))
+        Sort the hash values of all points and pass them to the hash fuction.
         """
-        a = vertices[0].distance(vertices[1])
-        b = vertices[1].distance(vertices[2])
-        c = vertices[2].distance(vertices[0])
+        hashes = list()
+        for point in self.points:
+            hashes.append(point.__hash__())
+        hashes.sort()
+        return hash(tuple(hashes))
 
-        s = (a + b + c) / 2
-        area = math.sqrt(s * (s - a) * (s - b) * (s - c))
-
-        return area
-
-    def has_common_vertices(self, other) -> bool:
-        """ Since set is used, the amount of computation is O(n). """
-        vertices_set = set(self.vertices)
-        for vertex in other.vertices:
-            if vertex in vertices_set:
+    def has_common_points(self, triangle) -> bool:
+        for point in self.points:
+            if point in triangle.points:
                 return True
         return False
 
-    def get_common_vertices(self, other) -> list:
-        """ Since set is used, the amount of computation is O(n). """
-        common_vertices = []
-        vertices_set = set(self.vertices)
-        for vertex in other.vertices:
-            if vertex in vertices_set:
-                common_vertices.append(vertex)
-        return common_vertices
-
-    def combine(self, other):
-        # 普通はN角形とM角形を結合するとN＋M-2角形が生成される。しかしこれにはコーナーケースがある。
-        # 例えば1頂点がくぼんだ形の5角形のくぼみの部分に4角形がはまっている状況を考える。
-        # 結合すると5角形になる
-        # つまりN角形とM角形を結合したとき共有している辺がS本あったとすると結合後は
-        # N + M - 2 * S角形となる
-        # TODO: Implement
-        new_polygon = Polygon()
-        return new_polygon
-
-    def __eq__(self, other):
-        """ Since set is used, the amount of computation is O(n). """
-        if self.num_of_vertices == other.num_of_vertices:
-            vertices_set = set(self.vertices)
-            for vertex in other.vertices:
-                vertices_set.add(vertex)
-            return len(vertices_set) == self.num_of_vertices
-        return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        """  """
-        """ 
-        Algorithm:
-        Let XList be a list that sorts the Xs of all vertices in ascending order.
-        Let YList be a list that sorts the Ys of all vertices in ascending order.
-        Combine two lists in the order of XList, YList.
-        Let the value obtained by passing the combined list trough the hash function
-        as the hash value.
-        """
-        x_list = []
-        y_list = []
-        for vertex in self.vertices:
-            x_list.append(vertex.x)
-            y_list.append(vertex.y)
-        x_list.sort()
-        y_list.sort()
-        combined_list = x_list + y_list
-        return hash(tuple(combined_list))
-
     def draw(self, canvas: Canvas):
-        for i in range(self.num_of_vertices):
-            begin = self.vertices[i]
-            end = self.vertices[(i + 1) % self.num_of_vertices]
-            canvas.create_line(begin.x, begin.y, end.x, end.y)
+        points = []
+        for point in self.points:
+            points.append(point.x)
+            points.append(point.y)
+
+        color_hex = self.color.hex
+        canvas.create_polygon(points, fill=color_hex, outline="#000")
 
 
-class Circle:
+class Circle(Drawable):
     __center: Point
     __radius: float
-
-    def __init__(self, center, radius):
-        self.__center = center
-        self.__radius = radius
+    __color: Color
 
     @property
     def center(self):
@@ -204,9 +172,16 @@ class Circle:
     def radius(self):
         return self.__radius
 
-    def draw(self, canvas: Canvas):
-        """ For debugging """
+    @property
+    def color(self):
+        return self.__color
 
+    def __init__(self, center: Point, radius: float, color: Color=Color(0xff, 0xff, 0xff)):
+        self.__center = center
+        self.__radius = radius
+        self.__color = color
+
+    def draw(self, canvas: Canvas):
         """
         Coordinates of the upper left vertex of a square
         circumscribing a circle.
@@ -220,4 +195,6 @@ class Circle:
         x2 = self.center.x + self.radius
         y2 = self.center.y + self.radius
 
-        canvas.create_oval(x1, y1, x2, y2)
+        color_hex = self.color.hex
+        canvas.create_oval(x1, y1, x2, y2, fill=color_hex, outline="#000")
+

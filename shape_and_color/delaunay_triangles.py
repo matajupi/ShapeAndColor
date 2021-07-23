@@ -3,21 +3,35 @@ Module for delaunay triangle generation.
 """
 
 import random
-from .libs import *
+import math
+from tkinter import Canvas
+from libs import Point, Triangle, Circle, Drawable
 
 
-class DelaunayTriangles:
+class DelaunayTriangles(Drawable):
     """
     From http://tercel-sakuragaoka.blogspot.com/2011/06/processingdelaunay.html
     """
 
-    triangle_set: set = set()
-    width: int
-    height: int
+    __triangle_set: set = set()
+    __width: int
+    __height: int
+
+    @property
+    def triangles(self):
+        return list(self.__triangle_set)
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
 
     def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
+        self.__width = width
+        self.__height = height
 
     def triangulation(self, point_list: list):
         """
@@ -25,7 +39,7 @@ class DelaunayTriangles:
         """
         # Add huge triangle to set
         huge_triangle = self.get_huge_triangle()
-        self.triangle_set.add(huge_triangle)
+        self.__triangle_set.add(huge_triangle)
 
         # Add points sequentially and repeat triangulation
         for point in point_list:
@@ -39,17 +53,17 @@ class DelaunayTriangles:
              -key   : Triangles(Polygon)
              -value : Whether it is duplicated.
                       - Non-duplicate : True
-                      - Duplicate     : False  
+                      - Duplicate     : False
             """
-            tmp_triangle_set = dict()
+            tmp_triangle_map = dict()
 
             """
             Take elements one by one from the current triangle list and
             determine if a given point is included in the circumscribed
             circle of each triangle.
             """
-            it = set(self.triangle_set)
-            for triangle in it:
+            iterator = set(self.__triangle_set)
+            for triangle in iterator:
                 circumscribed_circle = self.get_circumscribed_circle_of_triangle(triangle)
 
                 """
@@ -58,67 +72,64 @@ class DelaunayTriangles:
                 list and divide it again.
                 """
                 if circumscribed_circle.center.distance(point) <= circumscribed_circle.radius:
-                    vertices = triangle.vertices
-                    vertex1 = vertices[0]
-                    vertex2 = vertices[1]
-                    vertex3 = vertices[2]
-
                     # Divide the triangle into three around point
-                    self.add_element_to_redundancies_map(tmp_triangle_set,
-                                                         Polygon((point, vertex1, vertex2)))
-                    self.add_element_to_redundancies_map(tmp_triangle_set,
-                                                         Polygon((point, vertex2, vertex3)))
-                    self.add_element_to_redundancies_map(tmp_triangle_set,
-                                                         Polygon((point, vertex3, vertex1)))
+                    points = triangle.points
+                    point1 = points[0]
+                    point2 = points[1]
+                    point3 = points[2]
 
-                    self.triangle_set.remove(triangle)
+                    self.add_element_to_redundancies_map(tmp_triangle_map,
+                                                         Triangle(point, point1, point2))
+                    self.add_element_to_redundancies_map(tmp_triangle_map,
+                                                         Triangle(point, point2, point3))
+                    self.add_element_to_redundancies_map(tmp_triangle_map,
+                                                         Triangle(point, point3, point1))
+
+                    self.__triangle_set.remove(triangle)
 
             # Add unique temporary hashes to the triangle list
-            for triangle in tmp_triangle_set:
-                if tmp_triangle_set[triangle]:
-                    self.triangle_set.add(triangle)
+            for triangle, is_unique in tmp_triangle_map.items():
+                if is_unique:
+                    self.__triangle_set.add(triangle)
 
         # Remove the vertices of the outer triangle
-        it = set(self.triangle_set)
-        for triangle in it:
-            if huge_triangle.has_common_vertices(triangle):
-                self.triangle_set.remove(triangle)
+        iterator = set(self.__triangle_set)
+        for triangle in iterator:
+            if huge_triangle.has_common_points(triangle):
+                self.__triangle_set.remove(triangle)
 
-    def get_huge_triangle(self) -> Polygon:
+    def get_huge_triangle(self) -> Triangle:
         """
         Find an equilateral triangle that covers the entire screen.
         """
-        rectangle = Polygon((Point(0, 0),
-                            Point(self.width, 0),
-                            Point(0, self.height),
-                            Point(self.width, self.height)))
-        return self.get_equilateral_triangle_contains_rectangle(rectangle)
+        begin = Point(0, 0)
+        end = Point(self.width, self.height)
+        return self.get_equilateral_triangle_contains_rectangle(begin, end)
 
     @staticmethod
-    def get_equilateral_triangle_contains_rectangle(rectangle: Polygon) -> Polygon:
+    def get_equilateral_triangle_contains_rectangle(p1: Point, p2: Point) -> Triangle:
         """
-        Find an equilateral triangle that includes an arbitrary rectangle.
+        Compute an equilateral triangle that includes an arbitrary rectangle.
         """
-        # Find upper left coordinate and lower right coordinate
-        def compare_vertex(point: Point) -> float:
-            return point.x + point.y
-
-        start = min(rectangle.vertices, key=compare_vertex)
-        end = max(rectangle.vertices, key=compare_vertex)
-
         """
-        Find the circle that contains the give rectangle.
-        Center of circle c = Center of rectangle
+        Compute the circle that contains the give rectangle.
+        Center of circle c = Center of rectangle (width / 2, height / 2)
         Circle radius r = |p - c| + ρ
         However, p is any vertex of the given rectangle and
         ρ is any positive number.
         """
-        center = Point(abs(end.x - start.x) / 2,
-                       abs(end.y - start.y) / 2)
-        radius = center.distance(start) + 1.0
+        if p1.x > p2.x:
+            p1, p2 = p2, p1
+        delta_x = p2.x - p1.x
+        if p1.y > p2.y:
+            p1, p2 = p2, p1
+        delta_y = p2.y - p1.y
+
+        center = Point(delta_x / 2, delta_y / 2)
+        radius = center.distance(p1) + 1.0
 
         """
-        Find the equilateral triangle that circumscribes the circle.
+        Compute the equilateral triangle that circumscribes the circle.
         The center of gravity is equal to the center of circle.
         The length of one side is 2 * math.sqrt(3) * radius.
         """
@@ -134,12 +145,12 @@ class DelaunayTriangles:
         y3 = center.y + 2 * radius
         p3 = Point(x3, y3)
 
-        return Polygon((p1, p2, p3))
+        return Triangle(p1, p2, p3)
 
     @staticmethod
-    def get_circumscribed_circle_of_triangle(triangle: Polygon) -> Circle:
+    def get_circumscribed_circle_of_triangle(triangle: Triangle) -> Circle:
         """
-        Give a triangle and find its circumscribed circle.
+        Give a triangle and compute its circumscribed circle.
         """
         """
         Let the coordinates of each vertex of the triangle be (x1, y1), (x2, y2), (x3, y3) and
@@ -147,20 +158,20 @@ class DelaunayTriangles:
           (x - x1) ^ 2 + (y - y1) ^ 2
         = (x - x2) ^ 2 + (y - y2) ^ 2
         = (x - x3) ^ 2 + (y - y3) ^ 2
-        
+
         Therefore, the following formula holds.
         x = { (y3 - y1) * (x2 ^ 2 - x1 ^ 2 + y2 ^ 2 - y1 ^ 2)
             + (y1 - y2) * (x3 ^ 2 - x1 ^ 2 + y3 ^ 2 - y1 ^ 2) } / c
-            
+
         y = { (x1 - x3) * (x2 ^ 2 - x1 ^ 2 + y2 ^ 2 - y1 ^ 2)
             + (x2 - x1) * (x3 ^ 2 - x1 ^ 2 + y3 ^ 2 - y1 ^ 2) } / c
-        
+
         However
         c = 2 * { (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1) }
         """
-        p1 = triangle.vertices[0]
-        p2 = triangle.vertices[1]
-        p3 = triangle.vertices[2]
+        p1 = triangle.points[0]
+        p2 = triangle.points[1]
+        p3 = triangle.points[2]
 
         x1 = p1.x
         y1 = p1.y
@@ -169,7 +180,7 @@ class DelaunayTriangles:
         x3 = p3.x
         y3 = p3.y
 
-        c = 2.0 * ((x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1))
+        c = 2 * ((x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1))
         mul1 = (x2 ** 2 - x1 ** 2 + y2 ** 2 - y1 ** 2)
         mul2 = (x3 ** 2 - x1 ** 2 + y3 ** 2 - y1 ** 2)
         x = ((y3 - y1) * mul1
@@ -183,11 +194,11 @@ class DelaunayTriangles:
         return Circle(center, radius)
 
     @staticmethod
-    def add_element_to_redundancies_map(hash_map: dict, triangle: Polygon):
+    def add_element_to_redundancies_map(hash_map: dict, triangle: Triangle):
         """
         Add triangle to temporary hash.
         """
-        if triangle in hash_map.keys():
+        if triangle in hash_map:
             hash_map[triangle] = False
         else:
             hash_map[triangle] = True
@@ -196,14 +207,24 @@ class DelaunayTriangles:
         """
         For debugging
         """
-        for triangle in self.triangle_set:
+        for triangle in self.triangles:
             triangle.draw(canvas)
 
+    MIN_DISTANCE = 30
 
-def create_points_randomly(max_width: int, max_height: int, num_of_points: int) -> list:
-    points = list()
-    for i in range(num_of_points):
-        x = random.randint(0, max_width)
-        y = random.randint(0, max_height)
-        points.append(Point(x, y))
-    return points
+    @staticmethod
+    def create_points_randomly(width: int, height: int, num_points: int) -> list:
+        points = list()
+        for i in range(num_points):
+            flag = True
+            point: Point
+            while flag:
+                flag = False
+                x = random.randint(10, width - 10)
+                y = random.randint(10, height - 10)
+                point = Point(x, y)
+                for other in points:
+                    flag = flag or point.distance(other) < DelaunayTriangles.MIN_DISTANCE
+            points.append(point)
+        return points
+

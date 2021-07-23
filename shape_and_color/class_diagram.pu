@@ -1,0 +1,112 @@
+@startuml
+package libs
+{
+    abstract drawable
+    {
+        + void draw(tkinter.Canvas canvas)
+    }
+
+    class Color
+    {
+        + int red
+        + int green
+        + int blue
+
+        + string hex
+    }
+
+    class Point
+    {
+        + int x
+        + int y
+    }
+
+    class Triangle
+    {
+        + list Points
+        + Color color
+
+        + void draw(tkinter.Canvas canvas)
+        + bool has_common_points(Triangle triangle)
+    }
+
+    class Circle
+    {
+        + Point center
+        + int radius
+        + Color color
+
+        + void draw(tkinter.Canvas canvas)
+    }
+
+    Triangle --|> drawable
+    Circle --|> drawable
+    delaunay_triangles.DelaunayTriangles --|> drawable
+
+    Triangle o--> Color
+    Triangle o--> Point
+    
+    Circle o--> Point
+
+    delaunay_triangles.DelaunayTriangles o--> Triangle
+    delaunay_triangles.DelaunayTriangles o--> Circle
+    delaunay_triangles.DelaunayTriangles o--> Point
+    moderator.Moderator o--> Color
+}
+
+package delaunay_triangles
+{
+    class DelaunayTriangles
+    {
+        + list triangles
+        + int width
+        + int height
+
+        + DelaunayTriangles(int width, int height)
+        + void triangulation(list points)
+        + void draw(tkinter.Canvas canvas)
+        + {static} list create_points_randomly(int num)
+    }
+
+    moderator.Moderator o--> DelaunayTriangles
+}
+
+package tkinter
+{
+    class Frame
+    {
+        
+    }
+
+    moderator.Moderator --|> Frame
+}
+
+package moderator
+{
+    abstract Moderator
+    {
+        + void execute(tkinter.Tk master)
+        + {abstract} void initialize_widgets()
+        + {abstract} void initialize()
+        + {abstract} void update()
+    }
+
+    class DisplayModerator
+    {
+        + void initialize_widgets()
+        + void initialize()
+        + void update()
+    }
+
+    class AnimationModerator
+    {
+        + void initialize_widgets()
+        + void initialize()
+        + void update()
+    }
+
+    DisplayModerator --|> Moderator
+    AnimationModerator --|> Moderator
+}
+
+@enduml
