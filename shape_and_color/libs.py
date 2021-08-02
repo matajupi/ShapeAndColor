@@ -3,7 +3,7 @@ Libraries for creating a mission.
 """
 
 import math
-from abc import *
+from abc import ABC, abstractmethod
 from tkinter import Canvas
 
 
@@ -14,6 +14,9 @@ class Drawable(ABC):
 
 
 class Color:
+    COLOR_BEGIN = (64, 64, 64)
+    COLOR_DELTA = 15
+
     __red: int
     __green: int
     __blue: int
@@ -51,6 +54,29 @@ class Color:
         blue = min(blue, 255)
         self.__blue = blue
 
+    def __eq__(self, other):
+        return self.red == other.red and self.green == other.green and self.blue == other.blue
+
+    _all_colors: list = list()
+
+    @classmethod
+    def get_all_colors(cls) -> list:
+        if cls._all_colors:
+            return cls._all_colors
+        color_begin = Color.COLOR_BEGIN
+        color_delta = Color.COLOR_DELTA
+        colors = list()
+        for r in range(color_begin[0], 256, color_delta):
+            for g in range(color_begin[1], 256, color_delta):
+                for b in range(color_begin[2], 256, color_delta):
+                    color = Color(r, g, b)
+                    colors.append(color)
+        cls._all_colors = colors
+        return colors
+
+
+DEFAULT_COLOR = Color(0xff, 0xff, 0xff)
+
 
 class Point:
     __x: float
@@ -69,10 +95,10 @@ class Point:
         self.__y = y
 
     def __eq__(self, other):
-        # "isinstance" of "type" function is very hevy.
-        #if type(other) == Point:
-        #    return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
-        #return False
+        # "isinstance" of "type" function is very heavy.
+        # if type(other) == Point:
+        #     return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
+        # return False
         return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
 
     def __ne__(self, other):
@@ -94,17 +120,6 @@ class Triangle(Drawable):
     def points(self):
         return self.__points
 
-    @points.setter
-    def points(self, points: list):
-        if len(points) != 3:
-            raise Exception("List length must be 3.")
-        # "isinstance" of "type" function is very hevy.
-        #for point in points:
-        #    if type(point) == Point:
-        #        continue
-        #    raise TypeError("List items must be type of Point.")
-        self.__points = points
-
     @property
     def color(self):
         return self.__color
@@ -113,14 +128,17 @@ class Triangle(Drawable):
     def color(self, color: Color):
         self.__color = color
 
-    def __init__(self, p1: Point, p2: Point, p3: Point, color: Color=Color(0xff, 0xff, 0xff)):
-        self.points = [p1, p2, p3]
+    def __init__(self, p1: Point, p2: Point, p3: Point, color: Color = DEFAULT_COLOR):
+        self.__points = [p1, p2, p3]
         self.__color = color
 
     def __eq__(self, other):
-        # "isinstance" of "type" function is very hevy.
-        #if type(other) != Point:
-        #    return False
+        # "isinstance" of "type" function is very heavy.
+        # if type(other) != Point:
+        #     return False
+
+        if other is None:
+            return False
 
         other_points = list(other.points)
         for point in self.points:
@@ -142,6 +160,15 @@ class Triangle(Drawable):
             hashes.append(point.__hash__())
         hashes.sort()
         return hash(tuple(hashes))
+
+    def has_common_sides(self, triangle) -> bool:
+        common_point_count = 0
+        for point in self.points:
+            if point in triangle.points:
+                common_point_count += 1
+        if common_point_count >= 2:
+            return True
+        return False
 
     def has_common_points(self, triangle) -> bool:
         for point in self.points:
@@ -176,7 +203,7 @@ class Circle(Drawable):
     def color(self):
         return self.__color
 
-    def __init__(self, center: Point, radius: float, color: Color=Color(0xff, 0xff, 0xff)):
+    def __init__(self, center: Point, radius: float, color: Color = DEFAULT_COLOR):
         self.__center = center
         self.__radius = radius
         self.__color = color
@@ -197,4 +224,3 @@ class Circle(Drawable):
 
         color_hex = self.color.hex
         canvas.create_oval(x1, y1, x2, y2, fill=color_hex, outline="#000")
-

@@ -14,6 +14,7 @@ class DelaunayTriangles(Drawable):
     """
 
     __triangle_set: set = set()
+    __triangle_adjacency_map: dict
     __width: int
     __height: int
 
@@ -105,6 +106,38 @@ class DelaunayTriangles(Drawable):
         begin = Point(0, 0)
         end = Point(self.width, self.height)
         return self.get_equilateral_triangle_contains_rectangle(begin, end)
+
+    def find_triangle_has_in_edge(self, compare_vector: Point) -> Triangle:
+        # This algorithm is using cosine adjacency
+        point_dict = dict()
+        point_list = list()
+        for triangle in self.triangles:
+            for point in triangle.points:
+                point_dict[point] = triangle
+                point_list.append(point)
+        point_list.sort(key=lambda p: (p.x * compare_vector.x + p.y * compare_vector.y) / (math.sqrt(p.x ** 2 + p.y ** 2) * math.sqrt(compare_vector.x ** 2 + compare_vector.y ** 2)))
+        point = point_list[0]
+        return point_dict[point]
+
+    def create_triangle_adjacency_map(self):
+        # Warning: Very heavy
+        self.__triangle_adjacency_map = dict()
+        for triangle in self.triangles:
+            adjacent_triangles = self.find_adjacent_triangles(triangle)
+            self.__triangle_adjacency_map[triangle] = adjacent_triangles
+
+    def find_adjacent_triangles(self, triangle: Triangle) -> list:
+        adjacent_triangles = list()
+        for compare_triangle in self.triangles:
+            if compare_triangle == triangle:
+                continue
+            if triangle.has_common_sides(compare_triangle):
+                adjacent_triangles.append(compare_triangle)
+        return adjacent_triangles
+
+    def get_adjacent_triangles(self, triangle: Triangle) -> list:
+        " This method must be O(1). """
+        return self.__triangle_adjacency_map[triangle]
 
     @staticmethod
     def get_equilateral_triangle_contains_rectangle(p1: Point, p2: Point) -> Triangle:

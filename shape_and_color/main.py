@@ -1,6 +1,6 @@
 import sys
-from tkinter import *
-from moderators import *
+from tkinter import Tk
+from moderators import Moderator, IncreaseAnimationModerator, DisplayModerator, MoveAnimationModerator
 
 
 GUI_WIDTH = 1600
@@ -16,8 +16,19 @@ if __name__ == "__main__":
     # Pause commandline arguments and create moderator
     moderator: Moderator
     args = sys.argv
-    if len(args) == 2 and args[1] == "animation":
-        moderator = AnimationModerator(root, GUI_WIDTH, GUI_HEIGHT)
+    if len(args) >= 2:
+        moderator_type = args[1]
+        if moderator_type == "increase":
+            moderator = IncreaseAnimationModerator(root, GUI_WIDTH, GUI_HEIGHT)
+        elif moderator_type == "move":
+            num_move_triangles = int(args[2]) if len(args) >= 3 else 1
+            moderator = MoveAnimationModerator(root, GUI_WIDTH, GUI_HEIGHT
+                                               , num_move_triangles=num_move_triangles)
+        elif moderator_type == "display":
+            moderator = DisplayModerator(root, GUI_WIDTH, GUI_HEIGHT)
+        else:
+            print("Command line arguments: [increase | move | display]? [num_move_triangles: int]?")
+            exit(0)
     else:
         moderator = DisplayModerator(root, GUI_WIDTH, GUI_HEIGHT)
 
