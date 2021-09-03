@@ -1,18 +1,19 @@
 ![DEMO](demo.png)
 https://twitter.com/matamatajupiter/status/1417458235502587907
+å‰æœŸã®Pythonã®æˆæ¥­ã®ãƒãƒ¼ãƒˆãƒ•ã‚©ãƒªã‚ªã¨ã—ã¦ä½œã£ãŸã‚‚ã®  
 ## Usage
-EŠÂ‹«‚É“ü‚é(Windows cmd„§)  
+ãƒ»ç’°å¢ƒã«å…¥ã‚‹(Windows cmdæ¨å¥¨)  
 cd venv/Scripts  
 activate.bat  
-EÀsƒtƒ@ƒCƒ‹‚ÖˆÚ“®  
+ãƒ»å®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ«ã¸ç§»å‹•  
 cd shape_and_color  
-Eƒˆ‚Èƒhƒƒl[}‚ğ•`‰æ  
+ãƒ»ç´”ç²‹ãªãƒ‰ãƒ­ãƒãƒ¼å›³ã‚’æç”»  
 python main.py  
-EincreaseƒAƒ‹ƒSƒŠƒYƒ€  
+ãƒ»increaseã‚¢ãƒ«ã‚´ãƒªã‚ºãƒ   
 python main.py increase  
-EmoveƒAƒ‹ƒSƒŠƒYƒ€  
+ãƒ»moveã‚¢ãƒ«ã‚´ãƒªã‚ºãƒ   
 python main.py move  
-Eã‹L‚Å“®‚­OŠpŒ`‚Ì”‚ğ•ÏX  
-python main.py move ”š  
-EŠÂ‹«‚ğ”²‚¯‚é(Windows)  
+ãƒ»ä¸Šè¨˜ã§å‹•ãä¸‰è§’å½¢ã®æ•°ã‚’å¤‰æ›´  
+python main.py move æ•°å­—  
+ãƒ»ç’°å¢ƒã‚’æŠœã‘ã‚‹(Windows)  
 deactivate.bat  
