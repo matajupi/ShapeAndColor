@@ -1,6 +1,6 @@
 ![DEMO](demo.png)
 https://twitter.com/matamatajupiter/status/1417458235502587907  
-前期のPythonの講義のポートフォリオとして作ったもの  
+高専2年前期のPythonの講義のポートフォリオとして作ったもの。  
 ## Usage
 ・環境に入る(Windows cmd推奨)  
 cd venv/Scripts  
